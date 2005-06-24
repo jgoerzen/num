@@ -140,8 +140,6 @@ rpnShow i =
         toList (UnaryArith op a) = op : toList a
     in join " " (toList i)
 
-texShow :: SymbolicManip -> String
-
 simpleParen (Number x) = prettyShow (Number x)
 simpleParen (Symbol x) = prettyShow (Symbol x)
 simpleParen (BinaryArith op a b) = "(" ++ prettyShow (BinaryArith op a b) ++ ")"
