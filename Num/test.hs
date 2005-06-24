@@ -143,7 +143,7 @@ rpnShow i =
         toList (Symbol x) = [x]
         toList (BinaryArith op a b) = toList a ++ toList b ++
            [op2str op]
-        toList (UnaryArith op a) = op : toList a
+        toList (UnaryArith op a) = toList a ++ [op]
     in join " " (toList i)
 
 simpleParen :: (Show a, Num a) => SymbolicManip a -> String
