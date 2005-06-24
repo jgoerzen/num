@@ -4,8 +4,9 @@ Copyright (c) 2005 John Goerzen
 
 
 module NumTest where
+import MissingH.Str
 
-data Op = Plus | Minus | Mul | Div | Abs | Pow
+data Op = Plus | Minus | Mul | Div | Pow
         deriving (Eq, Show)
 
 data SymbolicManip = Number Double
@@ -21,7 +22,7 @@ instance Num SymbolicManip where
     a * b = BinaryArith Mul a b
     negate a = BinaryArith Mul (Number (-1)) a
     abs a = UnaryArith "abs" a
-    signum a = error "signum is unimplemented"
+    signum _ = error "signum is unimplemented"
     fromInteger i = Number (fromInteger i)
 
 instance Fractional SymbolicManip where
@@ -49,7 +50,7 @@ instance Floating SymbolicManip where
     atanh a = UnaryArith "atanh" a
 
 data Units = Units Double SymbolicManip
-           deriving (Eq, Show)
+           deriving (Eq)
 instance Num Units where
     (Units xa ua) + (Units xb ub) 
         | ua == ub = Units (xa + xb) ua
@@ -58,7 +59,7 @@ instance Num Units where
     (Units xa ua) * (Units xb ub) = Units (xa * xb) (ua * ub)
     negate (Units xa ua) = Units (negate xa) ua
     abs (Units xa ua) = Units (abs xa) ua
-    signum (Units xa ua) = Units (signum xa) (Number 1)
+    signum (Units xa _) = Units (signum xa) (Number 1)
     fromInteger i = Units (fromInteger i) (Number 1)
 
 instance Fractional Units where
@@ -105,7 +106,55 @@ instance Floating Units where
 units :: Double -> String -> Units
 units a b = Units a (Symbol b)
                                                     
+instance Show Units where
+    show (Units xa ua) = show xa ++ "_" ++ prettyShow (simplify ua)
+
     
 deg2rad x = 2 * pi * x / 360
 rad2deg x = 360 * x / (2 * pi)
 
+op2str :: Op -> String
+op2str Plus = "+"
+op2str Minus = "-"
+op2str Mul = "*"
+op2str Div = "/"
+op2str Pow = "**"
+
+prettyShow :: SymbolicManip -> String
+prettyShow (Number x) = show x
+prettyShow (Symbol x) = x
+prettyShow (BinaryArith op a b) =
+    let pa = simpleParen a
+        pb = simpleParen b
+        pop = op2str op
+        in pa ++ pop ++ pb
+prettyShow (UnaryArith op a) = 
+    op ++ "(" ++ show a ++ ")"
+
+rpnShow :: SymbolicManip -> String
+rpnShow i =
+    let toList (Number x) = [show x]
+        toList (Symbol x) = [x]
+        toList (BinaryArith op a b) = toList a ++ toList b ++
+           [op2str op]
+        toList (UnaryArith op a) = op : toList a
+    in join " " (toList i)
+
+texShow :: SymbolicManip -> String
+
+simpleParen (Number x) = prettyShow (Number x)
+simpleParen (Symbol x) = prettyShow (Symbol x)
+simpleParen (BinaryArith op a b) = "(" ++ prettyShow (BinaryArith op a b) ++ ")"
+simpleParen (UnaryArith op a) = prettyShow (UnaryArith op a)
+
+simplify :: SymbolicManip -> SymbolicManip
+simplify (BinaryArith Mul (Number 1) b) = b
+simplify (BinaryArith Mul a (Number 1)) = a
+simplify (BinaryArith Div a (Number 1)) = a
+simplify (BinaryArith Plus (Number 0) b) = b
+simplify (BinaryArith Plus a (Number 0)) = a
+simplify (BinaryArith Minus a (Number 0)) = a
+simplify x = x
+
+test :: forall a. (Num a) => a
+test = 2 * 5 + 3
