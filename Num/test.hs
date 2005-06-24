@@ -160,14 +160,13 @@ simplify (BinaryArith op ia ib) =
         case (op, sa, sb) of 
                 (Mul, Number 1, b) -> b
                 (Mul, a, Number 1) -> a
+                (Mul, Number 0, b) -> Number 0
+                (Mul, a, Number 0) -> Number 0
                 (Div, a, Number 1) -> a
                 (Plus, a, Number 0) -> a
                 (Plus, Number 0, b) -> b
                 (Minus, a, Number 0) -> a
                 _ -> BinaryArith op sa sb
-simplify (BinaryArith Plus (Number 0) b) = simplify b
-simplify (BinaryArith Plus a (Number 0)) = simplify a
-simplify (BinaryArith Minus a (Number 0)) = simplify a
 simplify (UnaryArith op a) = UnaryArith op (simplify a)
 simplify x = x
 
