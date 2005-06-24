@@ -152,6 +152,8 @@ simplify (BinaryArith Div a (Number 1)) = a
 simplify (BinaryArith Plus (Number 0) b) = b
 simplify (BinaryArith Plus a (Number 0)) = a
 simplify (BinaryArith Minus a (Number 0)) = a
+simplify (BinaryArith op a b) = BinaryArith op (simplify a) (simplify b)
+simplify (UnaryArith op a) = UnaryArith op (simplify a)
 simplify x = x
 
 test :: forall a. (Num a) => a
