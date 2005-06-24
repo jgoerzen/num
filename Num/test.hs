@@ -9,14 +9,15 @@ import MissingH.Str
 data Op = Plus | Minus | Mul | Div | Pow
         deriving (Eq, Show)
 
-data SymbolicManip = Number Double
-                   | Symbol String
-                   | BinaryArith Op SymbolicManip SymbolicManip
-                   | UnaryArith String SymbolicManip
-      deriving(Eq, Show)
+data Num a => SymbolicManip a = 
+          Number a
+        | Symbol String
+        | BinaryArith Op (SymbolicManip a) (SymbolicManip a)
+        | UnaryArith String (SymbolicManip a)
+          deriving(Eq)
                      
 
-instance Num SymbolicManip where
+instance Num a => Num (SymbolicManip a) where
     a + b = BinaryArith Plus a b
     a - b = BinaryArith Minus a b
     a * b = BinaryArith Mul a b
@@ -25,12 +26,12 @@ instance Num SymbolicManip where
     signum _ = error "signum is unimplemented"
     fromInteger i = Number (fromInteger i)
 
-instance Fractional SymbolicManip where
+instance (Fractional a) => Fractional (SymbolicManip a) where
     a / b = BinaryArith Div a b
     recip a = BinaryArith Div (Number 1) a
     fromRational r = Number (fromRational r)
 
-instance Floating SymbolicManip where
+instance (Floating a) => Floating (SymbolicManip a) where
     pi = Symbol "pi"
     exp a = UnaryArith "exp" a
     log a = UnaryArith "log" a
@@ -49,9 +50,9 @@ instance Floating SymbolicManip where
     acosh a = UnaryArith "acosh" a
     atanh a = UnaryArith "atanh" a
 
-data Units = Units Double SymbolicManip
+data Num a => Units a = Units a (SymbolicManip a)
            deriving (Eq)
-instance Num Units where
+instance (Num a) => Num (Units a) where
     (Units xa ua) + (Units xb ub) 
         | ua == ub = Units (xa + xb) ua
         | otherwise = error "Mis-matched units in add"
@@ -62,12 +63,12 @@ instance Num Units where
     signum (Units xa _) = Units (signum xa) (Number 1)
     fromInteger i = Units (fromInteger i) (Number 1)
 
-instance Fractional Units where
+instance (Fractional a) => Fractional (Units a) where
     (Units xa ua) / (Units xb ub) = Units (xa / xb) (ua / ub)
     recip a = 1 / a
     fromRational r = Units (fromRational r) (Number 1)
 
-instance Floating Units where
+instance (Floating a) => Floating (Units a) where
     pi = (Units pi (Number 1))
     exp _ = error "exp not yet implemented in Units"
     log _ = error "log not yet implemented in Units"
@@ -103,12 +104,14 @@ instance Floating Units where
     acosh = error "acosh not yet implemented in Units"
     atanh = error "atanh not yet implemented in Units"
 
-units :: Double -> String -> Units
+units :: (Num z) => z -> String -> Units z
 units a b = Units a (Symbol b)
                                                     
-instance Show Units where
+instance (Show a, Num a) => Show (Units a) where
     show (Units xa ua) = show xa ++ "_" ++ prettyShow (simplify ua)
 
+instance (Show a, Num a) => Show (SymbolicManip a) where
+    show a = prettyShow a
     
 deg2rad x = 2 * pi * x / 360
 rad2deg x = 360 * x / (2 * pi)
@@ -120,7 +123,7 @@ op2str Mul = "*"
 op2str Div = "/"
 op2str Pow = "**"
 
-prettyShow :: SymbolicManip -> String
+prettyShow :: (Show a, Num a) => SymbolicManip a -> String
 prettyShow (Number x) = show x
 prettyShow (Symbol x) = x
 prettyShow (BinaryArith op a b) =
@@ -131,7 +134,7 @@ prettyShow (BinaryArith op a b) =
 prettyShow (UnaryArith op a) = 
     op ++ "(" ++ show a ++ ")"
 
-rpnShow :: SymbolicManip -> String
+rpnShow :: (Show a, Num a) => SymbolicManip a -> String
 rpnShow i =
     let toList (Number x) = [show x]
         toList (Symbol x) = [x]
@@ -140,12 +143,13 @@ rpnShow i =
         toList (UnaryArith op a) = op : toList a
     in join " " (toList i)
 
+simpleParen :: (Show a, Num a) => SymbolicManip a -> String
 simpleParen (Number x) = prettyShow (Number x)
 simpleParen (Symbol x) = prettyShow (Symbol x)
-simpleParen (BinaryArith op a b) = "(" ++ prettyShow (BinaryArith op a b) ++ ")"
-simpleParen (UnaryArith op a) = prettyShow (UnaryArith op a)
+simpleParen x@(BinaryArith _ _ _) = "(" ++ prettyShow x ++ ")"
+simpleParen x@(UnaryArith _ _) = prettyShow x
 
-simplify :: SymbolicManip -> SymbolicManip
+simplify :: (Num a) => SymbolicManip a -> SymbolicManip a
 simplify (BinaryArith Mul (Number 1) b) = b
 simplify (BinaryArith Mul a (Number 1)) = a
 simplify (BinaryArith Div a (Number 1)) = a
