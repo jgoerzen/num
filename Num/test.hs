@@ -150,13 +150,21 @@ simpleParen x@(BinaryArith _ _ _) = "(" ++ prettyShow x ++ ")"
 simpleParen x@(UnaryArith _ _) = prettyShow x
 
 simplify :: (Num a) => SymbolicManip a -> SymbolicManip a
-simplify (BinaryArith Mul (Number 1) b) = b
-simplify (BinaryArith Mul a (Number 1)) = a
-simplify (BinaryArith Div a (Number 1)) = a
-simplify (BinaryArith Plus (Number 0) b) = b
-simplify (BinaryArith Plus a (Number 0)) = a
-simplify (BinaryArith Minus a (Number 0)) = a
-simplify (BinaryArith op a b) = BinaryArith op (simplify a) (simplify b)
+simplify (BinaryArith op ia ib) = 
+    let sa = simplify ia
+        sb = simplify ib
+        in
+        case (op, sa, sb) of 
+                (Mul, Number 1, b) -> b
+                (Mul, a, Number 1) -> a
+                (Div, a, Number 1) -> a
+                (Plus, a, Number 0) -> a
+                (Plus, Number 0, b) -> b
+                (Minus, a, Number 0) -> a
+                _ -> BinaryArith op sa sb
+simplify (BinaryArith Plus (Number 0) b) = simplify b
+simplify (BinaryArith Plus a (Number 0)) = simplify a
+simplify (BinaryArith Minus a (Number 0)) = simplify a
 simplify (UnaryArith op a) = UnaryArith op (simplify a)
 simplify x = x
 
