@@ -106,6 +106,9 @@ instance (Floating a) => Floating (Units a) where
 
 units :: (Num z) => z -> String -> Units z
 units a b = Units a (Symbol b)
+
+dropUnits :: (Num z) => Units z -> z
+dropUnits (Units x _) = x
                                                     
 instance (Show a, Num a) => Show (Units a) where
     show (Units xa ua) = show xa ++ "_" ++ prettyShow (simplify ua)
