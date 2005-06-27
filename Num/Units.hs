@@ -2,23 +2,30 @@
 
 module Units where
 
-class FundamentalUnit a where
-    uName :: a -> String
-    uAbbr :: a -> String
-    
-    uName = uAbbr
+class (Num a) => Unit a b where 
+    unit :: a -> b
+    value :: b -> a
 
-data FUEncap = forall a. FundamentalUnit a => FUEncap a
-type Units = [FUEncap]
+newtype (Num a) => Meters a = Meters a
+    deriving (Eq, Show)
+newtype (Num a) => Seconds a = Seconds a
+    deriving (Eq, Show)
 
-data Meter = Meter
-             deriving (Eq, Show)
+instance (Num a) => Unit a (Meters a) where
+    unit = Meters
+    value (Meters x) = x
+instance (Num a) => Unit a (Seconds a) where
+    unit = Seconds
+    value (Seconds x) = x
 
-instance FundamentalUnit Meter where
-    uAbbr _ = "m"
+newtype (Num a) => Prod a b c = Prod a
 
-data (Num a) => UnitNum a = UnitNum a Units
-{-
-instance (Num a) => Num (UnitNum a) where
-    (UnitNum xa ua) + (UnitNum xa ub)
--}
+instance (Num a, Unit a b, Unit a c) => Unit a (Prod a b c) where
+    unit = Prod
+    value (Prod x) = x
+
+--infix 7 *$
+infix 6 +$
+
+(+$) :: (Unit a b) => a b -> a b -> a b
+x +$ y = unit (value x + value y)
