@@ -8,10 +8,17 @@ class FundamentalUnit a where
     
     uName = uAbbr
 
-data (FundamentalUnit a) => Unit a = Unit [(a, Double)]
-    deriving (Eq, Show)
+data FUEncap = forall a. FundamentalUnit a => FUEncap a
+type Units = [FUEncap]
 
 data Meter = Meter
-           deriving (Eq, Show)
+             deriving (Eq, Show)
+
 instance FundamentalUnit Meter where
     uAbbr _ = "m"
+
+data (Num a) => UnitNum a = UnitNum a Units
+{-
+instance (Num a) => Num (UnitNum a) where
+    (UnitNum xa ua) + (UnitNum xa ub)
+-}
