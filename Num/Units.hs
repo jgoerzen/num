@@ -2,30 +2,33 @@
 
 module Units where
 
-class (Num a) => Unit a b where 
-    unit :: a -> b
-    value :: b -> a
+class Unit a where 
+    unit ::  Double -> a
+    value :: a -> Double
 
-newtype (Num a) => Meters a = Meters a
+newtype Meters = Meters Double
     deriving (Eq, Show)
-newtype (Num a) => Seconds a = Seconds a
+newtype Seconds = Seconds Double
     deriving (Eq, Show)
 
-instance (Num a) => Unit a (Meters a) where
+instance Unit Meters where
     unit = Meters
     value (Meters x) = x
-instance (Num a) => Unit a (Seconds a) where
+instance Unit Seconds where
     unit = Seconds
     value (Seconds x) = x
 
-newtype (Num a) => Prod a b c = Prod a
+newtype Prod a b = Prod Double
+    deriving (Eq, Show)
 
-instance (Num a, Unit a b, Unit a c) => Unit a (Prod a b c) where
+instance (Unit a, Unit b) => Unit (Prod a b) where
     unit = Prod
     value (Prod x) = x
 
 --infix 7 *$
 infix 6 +$
 
-(+$) :: (Unit a b) => a b -> a b -> a b
+(+$) :: (Unit a) => a -> a -> a
 x +$ y = unit (value x + value y)
+(*$) :: (Unit a, Unit b) => a -> b -> Prod a b
+x *$ y = Prod (value x * value y)
